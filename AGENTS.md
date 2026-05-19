@@ -22,6 +22,15 @@
 - 只有足够稳定、适合用户直接使用的 API 才从 `pypindou.__init__` 暴露。
 - 公开返回对象优先使用清晰的 dataclass。
 
+## Requirements 约束
+
+- `requirements.txt` 默认只写清晰的最低版本下界，例如 `numpy>=1.24.4`。
+- 不要为了“看起来稳定”按 Python 小版本拆出大量 marker 或上界；让 pip 根据包自身的 `Requires-Python`
+  和可用 wheel 选择合适版本。
+- 只有在 GitHub Actions、PyPI wheel 解析或真实运行兼容性已经证明会炸时，才增加 Python 版本 marker、上界或平台约束。
+- 增加或降低下界前，需要用本地命令验证边界版本。至少确认最低支持 Python 版本和最高支持 Python 版本的关键平台可解析。
+- 运行时依赖要保持最小集合；测试、文档、构建依赖分别放在对应的 `requirements-*.txt`。
+
 ## Python Pydoc / Docstring 规范
 
 本仓库的 Python docstring 规范沿用 `pyfcstm` 的写法：只使用 reStructuredText (reST) 格式，并面向 Sphinx
