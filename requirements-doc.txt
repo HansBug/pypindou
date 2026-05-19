@@ -1,0 +1,6 @@
+-r requirements.txt
+sphinx>=7
+sphinx-rtd-theme>=2
+enum-tools[sphinx]>=0.12
+where>=1.0
+packaging>=24

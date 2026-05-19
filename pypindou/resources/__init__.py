@@ -1,0 +1,3 @@
+"""
+Packaged static resources.
+"""

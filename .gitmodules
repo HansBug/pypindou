@@ -1,0 +1,6 @@
+[submodule "data/beadcolors"]
+	path = data/beadcolors
+	url = https://github.com/maxcleme/beadcolors.git
+[submodule "data/pindou-color-data"]
+	path = data/pindou-color-data
+	url = https://github.com/HansBug/pindou-color-data.git
