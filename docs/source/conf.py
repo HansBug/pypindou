@@ -28,7 +28,7 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = ["api_doc_en.rst", "api_doc_zh.rst"]
 master_doc = "index"
-language = "en"
+language = "zh_CN"
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]

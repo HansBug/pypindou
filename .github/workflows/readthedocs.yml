@@ -1,0 +1,79 @@
+name: Read the Docs
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  activate-tag-version:
+    name: Activate tag version
+    runs-on: ubuntu-latest
+    env:
+      READTHEDOCS_TOKEN: ${{ secrets.READTHEDOCS_TOKEN }}
+      READTHEDOCS_PROJECT: pypindou
+    steps:
+      - name: Activate and build Read the Docs version
+        shell: python
+        run: |
+          import json
+          import os
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+
+          token = os.environ.get("READTHEDOCS_TOKEN", "").strip()
+          project = os.environ["READTHEDOCS_PROJECT"]
+          tag = os.environ["GITHUB_REF_NAME"]
+
+          if not token:
+              print("READTHEDOCS_TOKEN is not configured; skipping Read the Docs activation.")
+              sys.exit(0)
+
+          base_url = f"https://readthedocs.org/api/v3/projects/{project}"
+
+          def request(method, path, payload=None):
+              data = None
+              headers = {
+                  "Accept": "application/json",
+                  "Authorization": f"Token {token}",
+              }
+              if payload is not None:
+                  data = json.dumps(payload).encode("utf-8")
+                  headers["Content-Type"] = "application/json"
+              req = urllib.request.Request(
+                  f"{base_url}{path}",
+                  data=data,
+                  headers=headers,
+                  method=method,
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as resp:
+                      body = resp.read()
+                      if not body:
+                          return None
+                      return json.loads(body.decode("utf-8"))
+              except urllib.error.HTTPError as err:
+                  body = err.read().decode("utf-8", "replace")
+                  raise RuntimeError(f"{method} {path} failed with {err.code}: {body}") from err
+
+          # Tags may need a short delay before Read the Docs has synced them from GitHub.
+          version = None
+          for attempt in range(6):
+              versions = request("GET", "/versions/")["results"]
+              version = next((item for item in versions if item["slug"] == tag), None)
+              if version is not None:
+                  break
+              request("POST", "/sync-versions/")
+              if attempt < 5:
+                  time.sleep(10)
+
+          if version is None:
+              raise RuntimeError(f"Read the Docs version {tag!r} was not found after syncing.")
+
+          request("PATCH", f"/versions/{tag}/", {"active": True, "hidden": False})
+          build = request("POST", f"/versions/{tag}/builds/")
+          print(f"Activated Read the Docs version {tag!r}.")
+          if build and "id" in build:
+              print(f"Started Read the Docs build #{build['id']}.")
