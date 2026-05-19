@@ -1,7 +1,7 @@
-Usage
-=====
+使用
+====
 
-Generate a pattern:
+生成图纸：
 
 .. code-block:: python
 
@@ -18,10 +18,9 @@ Generate a pattern:
     print(pattern.color_counts())
     pattern.to_image(scale=12).save("preview.png")
 
-Palette resources are generated from git submodules:
+色卡资源由 git submodule 生成：
 
 .. code-block:: bash
 
     git submodule update --init --recursive
     make resource
-

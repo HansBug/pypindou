@@ -13,7 +13,7 @@
 - 输出图纸网格、色号用量、预览图和符号图。
 - 内置色卡资源由 submodule 生成并随 PyPI 包发布。
 
-## Quick Start
+## 快速开始
 
 ```python
 from pypindou import generate_pattern
@@ -32,21 +32,21 @@ pattern.to_image(scale=12).save("preview.png")
 pattern.to_symbol_image(cell_size=24).save("symbols.png")
 ```
 
-## Palettes
+## 色卡数据
 
-The packaged palette resource is generated from:
+包内静态色卡资源由以下 submodule 生成：
 
-- `HansBug/pindou-color-data`: 国内常用拼豆色卡数据，含 MARD、盼盼、COCO、漫漫、咪小窝、优肯等。
-- `maxcleme/beadcolors`: Hama、Perler、Artkal、Nabbi 等国际色卡数据。
+- `HansBug/pindou-color-data`：国内常用拼豆色卡数据，含 MARD、盼盼、COCO、漫漫、咪小窝、优肯等。
+- `maxcleme/beadcolors`：Hama、Perler、Artkal、Nabbi 等国际色卡数据。
 
-Regenerate packaged resources after updating submodules:
+更新 submodule 后重新生成包内资源：
 
 ```bash
 git submodule update --init --recursive
 make resource
 ```
 
-List palettes:
+列出可用色卡：
 
 ```python
 from pypindou import list_palettes
@@ -55,11 +55,11 @@ for item in list_palettes():
     print(item["id"], item["title"], item["count"])
 ```
 
-## Data Quality
+## 数据质量
 
-Domestic palette data may contain upstream-unidentified colors marked with `unidentified: true` in the source data. `pypindou` excludes these by default. Set `allow_unidentified=True` only when you explicitly want those placeholder colors in downstream patterns.
+国内色卡数据里可能存在上游无法确认真实色号的颜色。这类颜色会在源数据中标记为 `unidentified: true`。`pypindou` 默认过滤它们，只有显式设置 `allow_unidentified=True` 时才会参与图纸生成。
 
-## Development
+## 开发
 
 ```bash
 git submodule update --init --recursive
@@ -69,4 +69,4 @@ make docs
 make package
 ```
 
-There is intentionally no CLI in this repository. Application-facing CLIs, web UIs, manual editing workflows, PDF exports, and deep-learning-assisted segmentation should be built as downstream layers on top of this library.
+本仓库刻意不提供 CLI。面向用户的 CLI、Web UI、人工改色流程、PDF 导出、深度学习辅助抠图/分割等，都应该作为下游应用层基于这个库继续构建。
