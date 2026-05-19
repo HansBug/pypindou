@@ -1,6 +1,7 @@
 PROJ_DIR    ?= ${CURDIR}
+PYTHON      ?= python
 SPHINXOPTS  ?=
-SPHINXBUILD ?= $(shell which sphinx-build)
+SPHINXBUILD ?= $(PYTHON) -m sphinx
 SOURCEDIR   ?= ${PROJ_DIR}/source
 BUILDDIR    ?= ${PROJ_DIR}/build
 
@@ -12,10 +13,10 @@ help:
 build: html
 
 html:
-	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@PYTHONPATH="$(abspath ..):$${PYTHONPATH}" $(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 	@touch "$(BUILDDIR)/html/.nojekyll"
 
 prod: html
 
 clean:
-	@$(SPHINXBUILD) -M clean "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@PYTHONPATH="$(abspath ..):$${PYTHONPATH}" $(SPHINXBUILD) -M clean "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

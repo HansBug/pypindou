@@ -7,7 +7,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Sequence
+from typing import Iterable, List, Optional, Sequence, Union
 
 from pypindou.pattern import generate_pattern
 
@@ -18,11 +18,11 @@ class BenchmarkCase:
     One benchmark case.
     """
 
-    image: str | Path
+    image: Union[str, Path]
     palette: str
     width: int
     height: int
-    max_colors: int | None = None
+    max_colors: Optional[int] = None
     quantize: str = "nearest"
 
 
@@ -36,7 +36,7 @@ class BenchmarkResult:
     palette: str
     width: int
     height: int
-    max_colors: int | None
+    max_colors: Optional[int]
     quantize: str
     bead_count: int
     used_colors: int

@@ -74,21 +74,15 @@ class BeadColor:
 
         data: Dict[str, Any] = {
             "code": self.code,
+            "name": self.name,
             "rgb": list(self.rgb),
             "hex": self.hex,
+            "group": self.group,
+            "source": self.source,
+            "unidentified": self.unidentified,
+            "original_code": self.original_code,
+            "metadata": dict(self.metadata),
         }
-        if self.name is not None:
-            data["name"] = self.name
-        if self.group is not None:
-            data["group"] = self.group
-        if self.source is not None:
-            data["source"] = self.source
-        if self.unidentified:
-            data["unidentified"] = True
-        if self.original_code is not None:
-            data["original_code"] = self.original_code
-        if self.metadata:
-            data["metadata"] = dict(self.metadata)
         return data
 
 
@@ -102,7 +96,10 @@ class Palette:
     title: str
     colors: Tuple[BeadColor, ...]
     description: Optional[str] = None
+    standard: str = "domestic"
     source: Optional[str] = None
+    source_id: Optional[str] = None
+    source_url: Optional[str] = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -169,7 +166,10 @@ class Palette:
             title=self.title,
             colors=tuple(colors),
             description=self.description,
+            standard=self.standard,
             source=self.source,
+            source_id=self.source_id,
+            source_url=self.source_url,
             metadata=dict(self.metadata),
         )
 
@@ -181,13 +181,13 @@ class Palette:
         data: Dict[str, Any] = {
             "id": self.id,
             "title": self.title,
+            "description": self.description,
+            "standard": self.standard,
+            "source": self.source,
+            "source_id": self.source_id,
+            "source_url": self.source_url,
             "count": len(self.colors),
+            "metadata": dict(self.metadata),
             "colors": [color.to_dict() for color in self.colors],
         }
-        if self.description:
-            data["description"] = self.description
-        if self.source:
-            data["source"] = self.source
-        if self.metadata:
-            data["metadata"] = dict(self.metadata)
         return data

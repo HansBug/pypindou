@@ -5,7 +5,7 @@ Image loading and preprocessing.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, Tuple
+from typing import Literal, Tuple, Union
 
 import numpy as np
 from PIL import Image
@@ -24,7 +24,7 @@ _RESAMPLE = {
 }
 
 
-def load_image(image: str | Path | Image.Image) -> Image.Image:
+def load_image(image: Union[str, Path, Image.Image]) -> Image.Image:
     """
     Load an image as RGBA.
     """
@@ -39,7 +39,7 @@ def resize_image(
     size: Tuple[int, int],
     *,
     fit: FitMode = "contain",
-    background: tuple[int, int, int, int] = (255, 255, 255, 0),
+    background: Tuple[int, int, int, int] = (255, 255, 255, 0),
     resample: ResampleMode = "lanczos",
 ) -> Image.Image:
     """
@@ -93,7 +93,7 @@ def rgba_to_rgb_array(
     *,
     background: BackgroundMode = "white",
     alpha_threshold: int = 16,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Convert an RGBA image to an RGB array and an active-pixel mask.
     """

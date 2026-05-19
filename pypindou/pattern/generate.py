@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional, Tuple, Union
 
 from PIL import Image
 
@@ -34,35 +35,35 @@ class PatternOptions:
 
     width: int
     height: int
-    palette: str | Palette = "mard-221-alfonse-doudou"
+    palette: Union[str, Palette] = "mard-221-alfonse-doudou"
     fit: FitMode = "contain"
     background: BackgroundMode = "white"
     alpha_threshold: int = 16
     resample: ResampleMode = "lanczos"
     color_space: ColorSpace = "lab"
     quantize: QuantizeMethod = "nearest"
-    max_colors: int | None = None
-    include_codes: tuple[str, ...] | None = None
-    exclude_codes: tuple[str, ...] | None = None
+    max_colors: Optional[int] = None
+    include_codes: Optional[Tuple[str, ...]] = None
+    exclude_codes: Optional[Tuple[str, ...]] = None
     allow_unidentified: bool = False
     random_state: int = 0
 
 
 def generate_pattern(
-    image: str | Path | Image.Image,
+    image: Union[str, Path, Image.Image],
     *,
     width: int,
     height: int,
-    palette: str | Palette = "mard-221-alfonse-doudou",
+    palette: Union[str, Palette] = "mard-221-alfonse-doudou",
     fit: FitMode = "contain",
     background: BackgroundMode = "white",
     alpha_threshold: int = 16,
     resample: ResampleMode = "lanczos",
     color_space: ColorSpace = "lab",
     quantize: QuantizeMethod = "nearest",
-    max_colors: int | None = None,
-    include_codes: tuple[str, ...] | None = None,
-    exclude_codes: tuple[str, ...] | None = None,
+    max_colors: Optional[int] = None,
+    include_codes: Optional[Tuple[str, ...]] = None,
+    exclude_codes: Optional[Tuple[str, ...]] = None,
     allow_unidentified: bool = False,
     random_state: int = 0,
 ) -> Pattern:
@@ -111,7 +112,7 @@ def generate_pattern(
     )
 
 
-def generate_pattern_with_options(image: str | Path | Image.Image, options: PatternOptions) -> Pattern:
+def generate_pattern_with_options(image: Union[str, Path, Image.Image], options: PatternOptions) -> Pattern:
     """
     Generate a pattern from a :class:`PatternOptions` object.
     """

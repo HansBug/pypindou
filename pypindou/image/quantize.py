@@ -27,7 +27,7 @@ class QuantizationResult:
     error: np.ndarray
 
 
-def _palette_arrays(palette: Palette, color_space: ColorSpace) -> tuple[np.ndarray, np.ndarray]:
+def _palette_arrays(palette: Palette, color_space: ColorSpace) -> Tuple[np.ndarray, np.ndarray]:
     rgb = np.asarray([color.rgb for color in palette.colors], dtype=np.float64)
     return rgb, convert_colors(rgb, color_space=color_space)
 
@@ -37,7 +37,7 @@ def nearest_indices(
     palette: Palette,
     *,
     color_space: ColorSpace = "lab",
-) -> tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Map ``(n, 3)`` RGB pixels to nearest palette indices.
     """

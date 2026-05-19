@@ -6,10 +6,16 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
-from importlib import resources
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 from .model import BeadColor, Palette
+
+try:
+    from importlib import resources
+
+    resources.files
+except (AttributeError, ImportError):
+    import importlib_resources as resources  # type: ignore[no-redef]
 
 
 def _read_json(name: str) -> Any:
@@ -32,7 +38,9 @@ def list_palettes() -> List[Dict[str, Any]]:
             "id": item["id"],
             "title": item["title"],
             "count": item["count"],
+            "standard": item.get("standard", "domestic"),
             "source": item.get("source"),
+            "source_id": item.get("source_id"),
             "description": item.get("description"),
         }
         for item in _registry()["palettes"]
@@ -64,8 +72,10 @@ def load_palette(palette_id: str, *, allow_unidentified: bool = False) -> Palett
                         "source",
                         "unidentified",
                         "original_code",
+                        "metadata",
                     }
                 }
+                metadata.update(raw.get("metadata") or {})
                 colors.append(
                     BeadColor(
                         code=raw["code"],
@@ -85,7 +95,10 @@ def load_palette(palette_id: str, *, allow_unidentified: bool = False) -> Palett
                 title=item["title"],
                 colors=tuple(colors),
                 description=item.get("description"),
+                standard=item.get("standard", "domestic"),
                 source=item.get("source"),
+                source_id=item.get("source_id"),
+                source_url=item.get("source_url"),
                 metadata=item.get("metadata") or {},
             )
 
@@ -93,12 +106,12 @@ def load_palette(palette_id: str, *, allow_unidentified: bool = False) -> Palett
 
 
 def get_palette(
-    palette: str | Palette,
+    palette: Union[str, Palette],
     *,
-    include_codes: Iterable[str] | None = None,
-    exclude_codes: Iterable[str] | None = None,
+    include_codes: Optional[Iterable[str]] = None,
+    exclude_codes: Optional[Iterable[str]] = None,
     allow_unidentified: bool = False,
-    max_colors: int | None = None,
+    max_colors: Optional[int] = None,
 ) -> Palette:
     """
     Resolve and optionally filter a palette.

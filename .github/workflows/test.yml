@@ -15,10 +15,13 @@ jobs:
           - windows-latest
           - macos-latest
         python-version:
+          - "3.8"
+          - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
 
     steps:
       - name: Checkout code
@@ -40,11 +43,11 @@ jobs:
         run: |
           python -V
           pip --version
-          make resource
+          make resource PYTHON=python
       - name: Run unittest
         shell: bash
         run: |
-          make unittest
+          make unittest PYTHON=python
       - name: Upload coverage to Codecov
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12' }}
         uses: codecov/codecov-action@v5

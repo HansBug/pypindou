@@ -12,7 +12,7 @@ with open(os.path.join(here, _MODULE_NAME, "config", "meta.py"), "r", encoding="
     exec(f.read(), meta)
 
 
-def _load_req(file: str):
+def _load_req(file):
     items = []
     with open(file, "r", encoding="utf-8") as f:
         for line in f.readlines():
@@ -54,7 +54,7 @@ setup(
     license="Apache License, Version 2.0",
     keywords="fuse-beads, perler, hama, artkal, mard, image-processing, pixel-art, pattern-generation",
     url="https://github.com/hansbug/pypindou",
-    python_requires=">=3.10",
+    python_requires=">=3.8",
     install_requires=requirements,
     extras_require=group_requirements,
     classifiers=[
@@ -69,10 +69,13 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Topic :: Artistic Software",
         "Topic :: Multimedia :: Graphics",
         "Topic :: Scientific/Engineering :: Image Processing",

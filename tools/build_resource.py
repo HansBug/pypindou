@@ -8,8 +8,27 @@ import argparse
 import csv
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
+
+DEFAULT_PALETTE_ID = "mard-221-alfonse-doudou"
+DOMESTIC_STANDARD = "domestic"
+INTERNATIONAL_STANDARD = "international"
+
+DOMESTIC_SOURCE = {
+    "id": "pindou-color-data",
+    "name": "HansBug/pindou-color-data",
+    "url": "https://github.com/HansBug/pindou-color-data",
+    "standard": DOMESTIC_STANDARD,
+    "primary": True,
+}
+INTERNATIONAL_SOURCE = {
+    "id": "beadcolors",
+    "name": "maxcleme/beadcolors",
+    "url": "https://github.com/maxcleme/beadcolors",
+    "standard": INTERNATIONAL_STANDARD,
+    "primary": False,
+}
 
 BEADCOLORS_TITLES = {
     "artkal_a": "Artkal A",
@@ -17,6 +36,7 @@ BEADCOLORS_TITLES = {
     "artkal_m": "Artkal M",
     "artkal_r": "Artkal R",
     "artkal_s": "Artkal S",
+    "diamondDotz": "Diamond Dotz",
     "hama": "Hama Midi",
     "hama_maxi": "Hama Maxi",
     "hama_mini": "Hama Mini",
@@ -34,6 +54,65 @@ def _hex_from_rgb(rgb: Iterable[int]) -> str:
     return "#{:02X}{:02X}{:02X}".format(r, g, b)
 
 
+def _hex_value(value: Optional[str], rgb: Iterable[int]) -> str:
+    if value:
+        text = value.strip()
+        if not text.startswith("#"):
+            text = f"#{text}"
+        return text.upper()
+    return _hex_from_rgb(rgb)
+
+
+def _color_record(
+    *,
+    code: str,
+    name: Optional[str],
+    rgb: Iterable[int],
+    hex_value: Optional[str] = None,
+    group: Optional[str] = None,
+    source: Optional[str] = None,
+    unidentified: bool = False,
+    original_code: Optional[str] = None,
+    metadata: Optional[Mapping[str, Any]] = None,
+) -> Dict[str, Any]:
+    rgb_values = [int(v) for v in rgb]
+    return {
+        "code": str(code),
+        "name": name,
+        "rgb": rgb_values,
+        "hex": _hex_value(hex_value, rgb_values),
+        "group": group,
+        "source": source,
+        "unidentified": bool(unidentified),
+        "original_code": original_code,
+        "metadata": dict(metadata or {}),
+    }
+
+
+def _palette_record(
+    *,
+    palette_id: str,
+    title: str,
+    description: Optional[str],
+    standard: str,
+    source: Mapping[str, Any],
+    colors: List[Dict[str, Any]],
+    metadata: Optional[Mapping[str, Any]] = None,
+) -> Dict[str, Any]:
+    return {
+        "id": palette_id,
+        "title": title,
+        "description": description,
+        "standard": standard,
+        "source": source["name"],
+        "source_id": source["id"],
+        "source_url": source["url"],
+        "count": len(colors),
+        "metadata": dict(metadata or {}),
+        "colors": colors,
+    }
+
+
 def _load_pindou_palette(path: Path) -> Dict[str, Any]:
     data = json.loads(path.read_text(encoding="utf-8"))
     colors = []
@@ -41,35 +120,40 @@ def _load_pindou_palette(path: Path) -> Dict[str, Any]:
         rgb = raw.get("rgb")
         if rgb is None:
             continue
-        item = {
-            "code": raw["code"],
-            "name": raw.get("name") or raw["code"],
-            "rgb": [int(v) for v in rgb],
-            "hex": raw.get("hex") or _hex_from_rgb(rgb),
-            "group": raw.get("group"),
-            "source": raw.get("source"),
-        }
-        if raw.get("unidentified"):
-            item["unidentified"] = True
-        if raw.get("original_code") is not None:
-            item["original_code"] = raw.get("original_code")
-        if raw.get("notes"):
-            item["notes"] = raw.get("notes")
-        colors.append(item)
 
-    return {
-        "id": data["id"],
-        "title": data["title"],
-        "description": data.get("description"),
-        "source": "HansBug/pindou-color-data",
-        "count": len(colors),
-        "metadata": {
+        metadata = {}
+        if raw.get("notes"):
+            metadata["notes"] = raw.get("notes")
+
+        colors.append(
+            _color_record(
+                code=raw["code"],
+                name=raw.get("name") or raw["code"],
+                rgb=rgb,
+                hex_value=raw.get("hex"),
+                group=raw.get("group"),
+                source=raw.get("source"),
+                unidentified=bool(raw.get("unidentified", False)),
+                original_code=raw.get("original_code"),
+                metadata=metadata,
+            )
+        )
+
+    return _palette_record(
+        palette_id=data["id"],
+        title=data["title"],
+        description=data.get("description"),
+        standard=DOMESTIC_STANDARD,
+        source=DOMESTIC_SOURCE,
+        colors=colors,
+        metadata={
             "upstream_schema": data.get("schema"),
+            "generated_at": data.get("generated_at"),
             "market": data.get("market"),
             "groups": data.get("groups"),
+            "sources": data.get("sources"),
         },
-        "colors": colors,
-    }
+    )
 
 
 def _load_beadcolors_palette(path: Path, source_id: str) -> Dict[str, Any]:
@@ -81,28 +165,38 @@ def _load_beadcolors_palette(path: Path, source_id: str) -> Dict[str, Any]:
                 continue
             code, name, symbol, r, g, b, *rest = row
             rgb = [int(float(r)), int(float(g)), int(float(b))]
+            metadata: Dict[str, Any] = {}
+            if symbol:
+                metadata["symbol"] = symbol
+            if len(rest) >= 3:
+                metadata["hsl"] = [float(rest[0]), float(rest[1]), float(rest[2])]
+            if len(rest) >= 6:
+                metadata["lab"] = [float(rest[3]), float(rest[4]), float(rest[5])]
+            if len(rest) > 7:
+                metadata["extra"] = rest[7:]
+
             colors.append(
-                {
-                    "code": code,
-                    "name": name,
-                    "symbol": symbol,
-                    "rgb": rgb,
-                    "hex": _hex_from_rgb(rgb),
-                    "source": rest[-1] if rest else None,
-                }
+                _color_record(
+                    code=code,
+                    name=name,
+                    rgb=rgb,
+                    source=rest[6] if len(rest) >= 7 else None,
+                    metadata=metadata,
+                )
             )
 
-    return {
-        "id": f"beadcolors-{source_id}",
-        "title": BEADCOLORS_TITLES.get(source_id, source_id.replace("_", " ").title()),
-        "description": f"{BEADCOLORS_TITLES.get(source_id, source_id)} palette from maxcleme/beadcolors gen/v3.",
-        "source": "maxcleme/beadcolors",
-        "count": len(colors),
-        "metadata": {
+    title = BEADCOLORS_TITLES.get(source_id, source_id.replace("_", " ").title())
+    return _palette_record(
+        palette_id=f"beadcolors-{source_id}",
+        title=title,
+        description=f"{title} palette from maxcleme/beadcolors gen/v3.",
+        standard=INTERNATIONAL_STANDARD,
+        source=INTERNATIONAL_SOURCE,
+        colors=colors,
+        metadata={
             "upstream_file": f"gen/v3/{source_id}.csv",
         },
-        "colors": colors,
-    }
+    )
 
 
 def build_resource(project_dir: Path, output: Path) -> Dict[str, Any]:
@@ -123,18 +217,25 @@ def build_resource(project_dir: Path, output: Path) -> Dict[str, Any]:
 
     data = {
         "schema": "pypindou-palettes",
-        "version": 1,
-        "sources": [
+        "version": 2,
+        "primary_standard": DOMESTIC_STANDARD,
+        "default_palette": DEFAULT_PALETTE_ID,
+        "standards": [
             {
-                "id": "pindou-color-data",
-                "url": "https://github.com/HansBug/pindou-color-data",
+                "id": DOMESTIC_STANDARD,
+                "title": "Chinese domestic bead palettes",
+                "description": "Primary palettes used by pypindou, based on common Chinese fuse-bead color systems.",
+                "primary": True,
             },
             {
-                "id": "beadcolors",
-                "url": "https://github.com/maxcleme/beadcolors",
+                "id": INTERNATIONAL_STANDARD,
+                "title": "International bead palettes",
+                "description": "Supplementary international palettes normalized into the same pypindou resource schema.",
+                "primary": False,
             },
         ],
-        "palettes": sorted(palettes, key=lambda item: item["id"]),
+        "sources": [DOMESTIC_SOURCE, INTERNATIONAL_SOURCE],
+        "palettes": sorted(palettes, key=lambda item: (item["standard"] != DOMESTIC_STANDARD, item["id"])),
     }
 
     output.parent.mkdir(parents=True, exist_ok=True)

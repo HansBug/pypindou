@@ -23,7 +23,7 @@ Palette
 -----------------------------------------------------
 
 .. autoclass:: Palette
-    :members: __post_init__,size,by_code,filter,to_dict,id,title,colors,description,source,metadata
+    :members: __post_init__,size,by_code,filter,to_dict,id,title,colors,description,standard,source,source_id,source_url,metadata
 
 
 rgb\_to\_hex
