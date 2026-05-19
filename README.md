@@ -27,12 +27,12 @@
 
 ## 示例
 
-下面示例使用 `scikit-image` 的经典样例图生成，色卡为国内默认 MARD 221 核对版。示例参数偏向实际摆豆操作：低色数、大色块、无抖动、清理孤立色块。
+下面示例使用像素风 Q 版图像生成，色卡为国内默认 MARD 221 核对版。示例参数偏向实际摆豆操作：低色数、大色块、无抖动、清理孤立色块。
 
 | 输入图像 | 拼豆预览 | 符号图 |
 | --- | --- | --- |
-| ![astronaut source](docs/source/_static/readme/astronaut-source.png) | ![astronaut preview](docs/source/_static/readme/astronaut-preview.png) | ![astronaut symbols](docs/source/_static/readme/astronaut-symbols.png) |
-| ![camera source](docs/source/_static/readme/camera-source.png) | ![camera preview](docs/source/_static/readme/camera-preview.png) | ![camera symbols](docs/source/_static/readme/camera-symbols.png) |
+| ![koishi source](docs/source/_static/readme/koishi-source.png) | ![koishi preview](docs/source/_static/readme/koishi-preview.png) | ![koishi symbols](docs/source/_static/readme/koishi-symbols.png) |
+| ![marisa source](docs/source/_static/readme/marisa-source.png) | ![marisa preview](docs/source/_static/readme/marisa-preview.png) | ![marisa symbols](docs/source/_static/readme/marisa-symbols.png) |
 
 ## 快速开始
 
