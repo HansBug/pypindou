@@ -1,5 +1,15 @@
 """
 Built-in palette resource loading.
+
+The packaged ``palettes.json`` file is generated from domestic and
+international submodules by ``make resource``.  Runtime code should load
+palettes through this module instead of reading the resource file directly.
+
+Example::
+
+    >>> from pypindou.color.resources import list_palettes
+    >>> isinstance(list_palettes(), list)
+    True
 """
 
 from __future__ import annotations
@@ -31,6 +41,9 @@ def _registry() -> Dict[str, Any]:
 def list_palettes() -> List[Dict[str, Any]]:
     """
     List built-in palettes.
+
+    :return: Summary dictionaries for packaged palettes.
+    :rtype: List[Dict[str, Any]]
     """
 
     return [
@@ -50,6 +63,15 @@ def list_palettes() -> List[Dict[str, Any]]:
 def load_palette(palette_id: str, *, allow_unidentified: bool = False) -> Palette:
     """
     Load a built-in palette by id.
+
+    :param palette_id: Built-in palette id.
+    :type palette_id: str
+    :param allow_unidentified: Whether to include colors marked
+        ``unidentified``, defaults to ``False``.
+    :type allow_unidentified: bool, optional
+    :return: Loaded palette.
+    :rtype: pypindou.color.Palette
+    :raises KeyError: If ``palette_id`` is unknown.
     """
 
     for item in _registry()["palettes"]:
@@ -115,6 +137,20 @@ def get_palette(
 ) -> Palette:
     """
     Resolve and optionally filter a palette.
+
+    :param palette: Built-in palette id or explicit palette object.
+    :type palette: Union[str, pypindou.color.Palette]
+    :param include_codes: Optional allow-list of color codes.
+    :type include_codes: Optional[Iterable[str]], optional
+    :param exclude_codes: Optional deny-list of color codes.
+    :type exclude_codes: Optional[Iterable[str]], optional
+    :param allow_unidentified: Whether to include colors marked
+        ``unidentified``, defaults to ``False``.
+    :type allow_unidentified: bool, optional
+    :param max_colors: Optional leading color count after filtering.
+    :type max_colors: Optional[int], optional
+    :return: Resolved palette.
+    :rtype: pypindou.color.Palette
     """
 
     result = load_palette(palette, allow_unidentified=allow_unidentified) if isinstance(palette, str) else palette

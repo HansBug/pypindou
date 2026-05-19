@@ -31,8 +31,17 @@ def _build_example(name: str, image: Image.Image, width: int, height: int, max_c
         palette="mard-221-alfonse-doudou",
         fit="cover",
         max_colors=max_colors,
-        quantize="floyd-steinberg",
+        quantize="nearest",
         color_space="lab",
+        prefilter="smooth",
+        prefilter_radius=0.7,
+        contrast=1.08,
+        saturation=0.92,
+        sharpness=0.85,
+        cleanup="majority",
+        cleanup_passes=2,
+        cleanup_threshold=5,
+        min_region_size=3,
     )
     _save_source(name, image.resize((width * 8, height * 8)))
     pattern.to_image(scale=8, grid=False).save(ASSET_DIR / f"{name}-preview.png")
@@ -40,9 +49,16 @@ def _build_example(name: str, image: Image.Image, width: int, height: int, max_c
 
 
 def main() -> None:
+    """
+    Rebuild README example source, preview, and symbol images.
+
+    :return: ``None``.
+    :rtype: None
+    """
+
     ASSET_DIR.mkdir(parents=True, exist_ok=True)
-    _build_example("astronaut", Image.fromarray(data.astronaut()), width=48, height=48, max_colors=36)
-    _build_example("camera", Image.fromarray(data.camera()).convert("RGB"), width=48, height=48, max_colors=24)
+    _build_example("astronaut", Image.fromarray(data.astronaut()), width=48, height=48, max_colors=24)
+    _build_example("camera", Image.fromarray(data.camera()).convert("RGB"), width=48, height=48, max_colors=12)
 
 
 if __name__ == "__main__":

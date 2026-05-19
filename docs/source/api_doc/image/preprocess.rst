@@ -24,6 +24,12 @@ ResampleMode
 .. autodata:: ResampleMode
 
 
+PreprocessMode
+-----------------------------------------------------
+
+.. autodata:: PreprocessMode
+
+
 load\_image
 -----------------------------------------------------
 
@@ -34,6 +40,18 @@ resize\_image
 -----------------------------------------------------
 
 .. autofunction:: resize_image
+
+
+enhance\_image
+-----------------------------------------------------
+
+.. autofunction:: enhance_image
+
+
+prefilter\_image
+-----------------------------------------------------
+
+.. autofunction:: prefilter_image
 
 
 remove\_background\_by\_alpha

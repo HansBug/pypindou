@@ -200,6 +200,18 @@ def _load_beadcolors_palette(path: Path, source_id: str) -> Dict[str, Any]:
 
 
 def build_resource(project_dir: Path, output: Path) -> Dict[str, Any]:
+    """
+    Build the packaged palette registry from local data submodules.
+
+    :param project_dir: Repository root that contains the ``data`` submodules.
+    :type project_dir: pathlib.Path
+    :param output: Target ``palettes.json`` path.
+    :type output: pathlib.Path
+    :return: Generated registry dictionary.
+    :rtype: Dict[str, Any]
+    :raises ValueError: If duplicated palette ids are detected.
+    """
+
     palettes: List[Dict[str, Any]] = []
 
     pindou_dir = project_dir / "data" / "pindou-color-data"
@@ -244,6 +256,13 @@ def build_resource(project_dir: Path, output: Path) -> Dict[str, Any]:
 
 
 def main() -> None:
+    """
+    Run the resource builder command-line entry point.
+
+    :return: ``None``.
+    :rtype: None
+    """
+
     parser = argparse.ArgumentParser(description="Build pypindou packaged palette resource.")
     parser.add_argument("-p", "--project-dir", type=Path, default=Path.cwd())
     parser.add_argument("-o", "--output", type=Path, default=Path("pypindou/resources/palettes.json"))

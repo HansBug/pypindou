@@ -1,5 +1,9 @@
 """
-Pattern generation and rendering.
+Pattern generation and rendering APIs.
+
+Import from this package when an application needs to generate structured bead
+patterns or render preview/symbol images from an existing
+:class:`pypindou.pattern.Pattern`.
 """
 
 from .generate import PatternOptions, generate_pattern, generate_pattern_with_options

@@ -15,6 +15,12 @@
 - 修改 submodule 或资源生成逻辑后，运行 `make resource`，并提交生成的 `pypindou/resources/palettes.json`。
 - 标记为 `unidentified: true` 的颜色默认应被过滤。转换数据时不要丢掉这个标记。
 
+## 调研、讨论和计划文档
+
+- 后续所有调研、讨论、方案、计划、取舍记录等工作流文档都放在 `plans/*.md`。
+- `plans/` 中的文档应写清楚日期、背景、参考来源、结论和后续行动，避免只留下零散命令输出。
+- 面向用户的 README、Sphinx 文档和 API docstring 只保留稳定用法；过程性材料留在 `plans/`。
+
 ## 代码风格
 
 - 遵循当前模块结构：`color`、`image`、`pattern`、`benchmark`。
@@ -30,6 +36,12 @@
 - 只有在 GitHub Actions、PyPI wheel 解析或真实运行兼容性已经证明会炸时，才增加 Python 版本 marker、上界或平台约束。
 - 增加或降低下界前，需要用本地命令验证边界版本。至少确认最低支持 Python 版本和最高支持 Python 版本的关键平台可解析。
 - 运行时依赖要保持最小集合；测试、文档、构建依赖分别放在对应的 `requirements-*.txt`。
+
+## 文档生成
+
+- 修改公开 Python API、模块结构或 docstring 后，必须运行 `make rst_auto`。
+- `make rst_auto` 生成或更新的 `docs/source/api_doc/**/*.rst` 需要随源码一起提交。
+- 如果 docstring 含复杂 reST markup，继续运行 `make docs` 验证 Sphinx 渲染。
 
 ## Python Pydoc / Docstring 规范
 

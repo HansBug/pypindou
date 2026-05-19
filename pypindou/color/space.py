@@ -1,5 +1,15 @@
 """
 Color-space helpers used by quantizers.
+
+The quantizers operate on RGB arrays but can compute distances either directly
+in RGB or in CIE Lab.  Lab is the default for image-to-pattern generation
+because it is usually closer to perceived color difference.
+
+Example::
+
+    >>> import numpy as np
+    >>> convert_colors(np.array([[255, 255, 255]], dtype=np.uint8), color_space="rgb").tolist()
+    [[255.0, 255.0, 255.0]]
 """
 
 from __future__ import annotations
@@ -15,6 +25,12 @@ ColorSpace = Literal["rgb", "lab"]
 def as_color_array(rgb: np.ndarray) -> np.ndarray:
     """
     Normalize an array-like RGB table to a ``float64`` ``(n, 3)`` array.
+
+    :param rgb: RGB array-like object.
+    :type rgb: numpy.ndarray
+    :return: Normalized ``float64`` array.
+    :rtype: numpy.ndarray
+    :raises ValueError: If the input shape is not ``(n, 3)``.
     """
 
     arr = np.asarray(rgb, dtype=np.float64)
@@ -26,6 +42,14 @@ def as_color_array(rgb: np.ndarray) -> np.ndarray:
 def convert_colors(rgb: np.ndarray, color_space: ColorSpace = "lab") -> np.ndarray:
     """
     Convert RGB values in ``0..255`` to the requested distance space.
+
+    :param rgb: RGB values with shape ``(n, 3)``.
+    :type rgb: numpy.ndarray
+    :param color_space: Target distance space, defaults to ``"lab"``.
+    :type color_space: ColorSpace, optional
+    :return: Converted color array.
+    :rtype: numpy.ndarray
+    :raises ValueError: If ``color_space`` is unsupported.
     """
 
     arr = as_color_array(rgb)

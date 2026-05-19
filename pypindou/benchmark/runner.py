@@ -1,5 +1,16 @@
 """
 Small benchmark helpers for pattern-generation experiments.
+
+Benchmarks in this module intentionally reuse the public
+:func:`pypindou.pattern.generate_pattern` API.  They are useful for comparing
+image size, palette size, color limits, and quantization strategies without
+introducing a separate CLI.
+
+Example::
+
+    >>> from pypindou.benchmark.runner import results_to_rows
+    >>> results_to_rows([])
+    []
 """
 
 from __future__ import annotations
@@ -16,6 +27,19 @@ from pypindou.pattern import generate_pattern
 class BenchmarkCase:
     """
     One benchmark case.
+
+    :param image: Source image path.
+    :type image: Union[str, pathlib.Path]
+    :param palette: Built-in palette id.
+    :type palette: str
+    :param width: Target bead-grid width.
+    :type width: int
+    :param height: Target bead-grid height.
+    :type height: int
+    :param max_colors: Optional maximum color count, defaults to ``None``.
+    :type max_colors: Optional[int], optional
+    :param quantize: Quantization method, defaults to ``"nearest"``.
+    :type quantize: str, optional
     """
 
     image: Union[str, Path]
@@ -30,6 +54,27 @@ class BenchmarkCase:
 class BenchmarkResult:
     """
     One benchmark result row.
+
+    :param image: Source image path as text.
+    :type image: str
+    :param palette: Built-in palette id.
+    :type palette: str
+    :param width: Target bead-grid width.
+    :type width: int
+    :param height: Target bead-grid height.
+    :type height: int
+    :param max_colors: Optional maximum color count.
+    :type max_colors: Optional[int]
+    :param quantize: Quantization method.
+    :type quantize: str
+    :param bead_count: Number of active beads.
+    :type bead_count: int
+    :param used_colors: Number of colors used by the generated pattern.
+    :type used_colors: int
+    :param mean_error: Mean active-pixel quantization error.
+    :type mean_error: float
+    :param elapsed: Average elapsed seconds.
+    :type elapsed: float
     """
 
     image: str
@@ -47,6 +92,14 @@ class BenchmarkResult:
 def run_benchmark(cases: Iterable[BenchmarkCase], *, repeat: int = 1) -> List[BenchmarkResult]:
     """
     Run pattern-generation benchmarks.
+
+    :param cases: Benchmark cases to execute.
+    :type cases: Iterable[BenchmarkCase]
+    :param repeat: Number of times to run each case, defaults to ``1``.
+    :type repeat: int, optional
+    :return: Benchmark results in input order.
+    :rtype: List[BenchmarkResult]
+    :raises ValueError: If ``repeat`` is not positive.
     """
 
     if repeat <= 0:
@@ -90,6 +143,11 @@ def run_benchmark(cases: Iterable[BenchmarkCase], *, repeat: int = 1) -> List[Be
 def results_to_rows(results: Sequence[BenchmarkResult]) -> List[dict]:
     """
     Convert benchmark results to dictionaries.
+
+    :param results: Benchmark result objects.
+    :type results: Sequence[BenchmarkResult]
+    :return: Shallow dictionary rows.
+    :rtype: List[dict]
     """
 
     return [result.__dict__.copy() for result in results]

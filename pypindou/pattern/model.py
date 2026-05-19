@@ -1,5 +1,20 @@
 """
-Pattern model.
+Pattern data model and render helpers.
+
+The :class:`Pattern` dataclass is the main structured output of
+:func:`pypindou.pattern.generate_pattern`.  It stores the palette-index grid,
+active bead mask, rendered RGB preview data, per-pixel error, and metadata that
+describes how the pattern was generated.
+
+Example::
+
+    >>> import numpy as np
+    >>> from pypindou.color import BeadColor, Palette
+    >>> from pypindou.pattern.model import Pattern
+    >>> palette = Palette("demo", "Demo", (BeadColor("001", (255, 255, 255)),))
+    >>> pattern = Pattern(1, 1, palette, np.array([[0]]), np.array([[[255, 255, 255]]], dtype=np.uint8), np.ones((1, 1), dtype=bool), np.zeros((1, 1)))
+    >>> pattern.bead_count
+    1
 """
 
 from __future__ import annotations
@@ -18,6 +33,25 @@ from pypindou.color import BeadColor, Palette
 class Pattern:
     """
     A bead pattern generated from one image.
+
+    :param width: Pattern width in beads.
+    :type width: int
+    :param height: Pattern height in beads.
+    :type height: int
+    :param palette: Palette used by ``indices``.
+    :type palette: pypindou.color.Palette
+    :param indices: Palette-index grid with shape ``(height, width)``.
+    :type indices: numpy.ndarray
+    :param rgb_image: Quantized RGB preview array with shape
+        ``(height, width, 3)``.
+    :type rgb_image: numpy.ndarray
+    :param active_mask: Boolean mask of active beads.
+    :type active_mask: numpy.ndarray
+    :param error: Per-pixel quantization error.
+    :type error: numpy.ndarray
+    :param metadata: Generation metadata, defaults to an empty mapping.
+    :type metadata: Mapping[str, Any], optional
+    :raises ValueError: If array shapes do not match ``width`` and ``height``.
     """
 
     width: int
@@ -53,6 +87,9 @@ class Pattern:
     def bead_count(self) -> int:
         """
         Number of active beads.
+
+        :return: Number of active beads.
+        :rtype: int
         """
 
         return int(self.active_mask.sum())
@@ -61,6 +98,9 @@ class Pattern:
     def board_size(self) -> Tuple[int, int]:
         """
         Pattern grid size as ``(width, height)``.
+
+        :return: Pattern size.
+        :rtype: Tuple[int, int]
         """
 
         return self.width, self.height
@@ -68,6 +108,9 @@ class Pattern:
     def color_counts(self) -> Dict[str, int]:
         """
         Count beads by color code.
+
+        :return: Mapping from bead color code to usage count.
+        :rtype: Dict[str, int]
         """
 
         values = self.indices[self.active_mask]
@@ -80,6 +123,10 @@ class Pattern:
     def legend(self) -> List[Dict[str, Any]]:
         """
         Return legend rows sorted by count descending.
+
+        :return: Legend rows with code, name, RGB, hex, count, and
+            unidentified flag.
+        :rtype: List[Dict[str, Any]]
         """
 
         counts = self.color_counts()
@@ -102,6 +149,10 @@ class Pattern:
     def color_grid(self) -> List[List[Optional[str]]]:
         """
         Return the pattern grid as color codes.
+
+        :return: Two-dimensional grid of color codes, using ``None`` for
+            inactive cells.
+        :rtype: List[List[Optional[str]]]
         """
 
         grid: List[List[Optional[str]]] = []
@@ -116,6 +167,9 @@ class Pattern:
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert the pattern to a JSON-serializable dictionary.
+
+        :return: Dictionary representation of the pattern.
+        :rtype: Dict[str, Any]
         """
 
         return {
@@ -135,6 +189,14 @@ class Pattern:
     def to_image(self, *, scale: int = 16, grid: bool = True) -> Image.Image:
         """
         Render the pattern as a preview image.
+
+        :param scale: Pixel size of one bead cell, defaults to ``16``.
+        :type scale: int, optional
+        :param grid: Whether to draw cell grid lines, defaults to ``True``.
+        :type grid: bool, optional
+        :return: RGB preview image.
+        :rtype: PIL.Image.Image
+        :raises ValueError: If ``scale`` is not positive.
         """
 
         if scale <= 0:
@@ -158,6 +220,18 @@ class Pattern:
     def to_symbol_image(self, *, cell_size: int = 24, show_grid: bool = True) -> Image.Image:
         """
         Render a symbol map with bead codes.
+
+        The current renderer writes the last three characters of each color
+        code into the cell.  It is intended as a compact, human-checkable
+        symbol map for README examples and downstream exports.
+
+        :param cell_size: Pixel size of one cell, defaults to ``24``.
+        :type cell_size: int, optional
+        :param show_grid: Whether to draw cell borders, defaults to ``True``.
+        :type show_grid: bool, optional
+        :return: RGB symbol image.
+        :rtype: PIL.Image.Image
+        :raises ValueError: If ``cell_size`` is not positive.
         """
 
         if cell_size <= 0:
@@ -187,6 +261,14 @@ class Pattern:
 def color_for_code(pattern: Pattern, code: str) -> BeadColor:
     """
     Return the palette color for ``code`` in a pattern.
+
+    :param pattern: Pattern whose palette should be queried.
+    :type pattern: Pattern
+    :param code: Palette color code.
+    :type code: str
+    :return: Matching bead color.
+    :rtype: pypindou.color.BeadColor
+    :raises KeyError: If the code is not present in the pattern palette.
     """
 
     return pattern.palette.by_code(code)

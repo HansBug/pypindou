@@ -10,7 +10,7 @@ PatternOptions
 -----------------------------------------------------
 
 .. autoclass:: PatternOptions
-    :members: width,height,palette,fit,background,alpha_threshold,resample,color_space,quantize,max_colors,include_codes,exclude_codes,allow_unidentified,random_state
+    :members: width,height,palette,fit,background,alpha_threshold,resample,prefilter,prefilter_radius,brightness,contrast,saturation,sharpness,grayscale,color_space,quantize,dither_strength,max_colors,cleanup,cleanup_passes,cleanup_threshold,min_region_size,include_codes,exclude_codes,allow_unidentified,random_state
 
 
 generate\_pattern

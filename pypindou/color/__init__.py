@@ -1,5 +1,14 @@
 """
 Color palettes and color-space utilities.
+
+This package provides the palette dataclasses, RGB/hex conversion helpers,
+packaged palette loading, and color-space conversion used by quantizers.
+
+Example::
+
+    >>> from pypindou.color import hex_to_rgb, rgb_to_hex
+    >>> rgb_to_hex(hex_to_rgb("#FFFFFF"))
+    '#FFFFFF'
 """
 
 from .model import BeadColor, Palette, RGB, hex_to_rgb, rgb_to_hex

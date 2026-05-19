@@ -14,10 +14,12 @@
 当前阶段重点放在可复用库能力，而不是 CLI 或 GUI：
 
 - 图片缩放到指定拼豆格数。
+- 支持亮度、对比度、饱和度、锐度、灰度和预滤波调节。
 - 基于真实色卡做最近色匹配。
 - 支持 RGB / Lab 距离空间。
-- 支持 Floyd-Steinberg 抖动。
+- 支持可调强度 Floyd-Steinberg 抖动。
 - 支持限制可用颜色列表、排除颜色、限制总颜色数。
+- 支持邻域多数清理和小连通域合并，减少不利于手工操作的孤立色块。
 - 默认过滤不可辨认色号，避免下游误用 `UNKNOWN-*`。
 - 输出图纸网格、色号用量、预览图和符号图。
 - 内置色卡资源由 submodule 生成并随 PyPI 包发布。
@@ -25,7 +27,7 @@
 
 ## 示例
 
-下面示例使用 `scikit-image` 的经典样例图生成，色卡为国内默认 MARD 221 核对版。
+下面示例使用 `scikit-image` 的经典样例图生成，色卡为国内默认 MARD 221 核对版。示例参数偏向实际摆豆操作：低色数、大色块、无抖动、清理孤立色块。
 
 | 输入图像 | 拼豆预览 | 符号图 |
 | --- | --- | --- |
@@ -42,14 +44,33 @@ pattern = generate_pattern(
     palette="mard-221-alfonse-doudou",
     width=58,
     height=58,
-    max_colors=48,
-    quantize="floyd-steinberg",
+    fit="cover",
+    max_colors=32,
+    prefilter="smooth",
+    cleanup="majority",
+    cleanup_passes=2,
+    min_region_size=3,
 )
 
 print(pattern.color_counts())
 pattern.to_image(scale=12).save("preview.png")
 pattern.to_symbol_image(cell_size=24).save("symbols.png")
 ```
+
+如果目标是更接近照片纹理，而不是减少操作复杂度，可以显式启用抖动：
+
+```python
+pattern = generate_pattern(
+    "input.png",
+    width=58,
+    height=58,
+    max_colors=48,
+    quantize="floyd-steinberg",
+    dither_strength=0.5,
+)
+```
+
+照片输入通常建议先从 `max_colors=16..48`、`prefilter="smooth"`、`cleanup="majority"` 和 `min_region_size=2..4` 开始调。抖动会增加细碎色块，适合需要保留渐变和阴影纹理的图，不适合作为默认实操图纸。
 
 ## 色卡数据
 
