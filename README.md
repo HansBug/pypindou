@@ -54,8 +54,11 @@ pattern = generate_pattern(
 
 print(pattern.color_counts())
 pattern.to_image(scale=12).save("preview.png")
-pattern.to_symbol_image(cell_size=24).save("symbols.png")
+pattern.save_symbol_chart("symbols.png", cell_size=24)
+pattern.save_symbol_chart("symbols.svg", cell_size=24)
 ```
+
+`save_symbol_chart` 支持 PNG 和 SVG 输出；色号文字会自适应缩放并限制在各自 cell 内。
 
 如果目标是更接近照片纹理，而不是减少操作复杂度，可以显式启用抖动：
 

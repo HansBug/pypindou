@@ -21,12 +21,101 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from html import escape
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, Union
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from pypindou.color import BeadColor, Palette
+
+SymbolFormat = Literal["png", "svg"]
+SymbolLabelMode = Literal["code", "short", "symbol"]
+
+_GRID_RGB = (80, 80, 80)
+_SVG_GRID = "#505050"
+_SVG_FONT_FAMILY = "DejaVu Sans Mono, Consolas, Menlo, monospace"
+_LABEL_MODES = ("code", "short", "symbol")
+
+
+def _cell_padding(cell_size: int) -> int:
+    return min(max(1, int(round(cell_size * 0.1))), max(0, cell_size // 3))
+
+
+def _cell_inner_size(cell_size: int) -> Tuple[int, int, int]:
+    padding = _cell_padding(cell_size)
+    inner = max(1, cell_size - 2 * padding)
+    return padding, inner, inner
+
+
+def _load_font(size: int) -> ImageFont.ImageFont:
+    try:
+        return ImageFont.load_default(size=max(1, int(size)))
+    except TypeError:
+        return ImageFont.load_default()
+
+
+def _text_bbox(font: ImageFont.ImageFont, label: str) -> Tuple[int, int, int, int]:
+    bbox = font.getbbox(label)
+    return int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+
+
+def _label_for_color(color: BeadColor, mode: SymbolLabelMode) -> str:
+    if mode == "code":
+        return color.code
+    if mode == "short":
+        return color.code[-3:]
+    if mode == "symbol":
+        symbol = color.metadata.get("symbol")
+        return str(symbol) if symbol else color.code[-3:]
+    raise ValueError(f"Unsupported label mode: {mode!r}.")
+
+
+def _check_label_mode(mode: str) -> SymbolLabelMode:
+    if mode not in _LABEL_MODES:
+        raise ValueError(f"Unsupported label mode: {mode!r}.")
+    return mode  # type: ignore[return-value]
+
+
+def _text_rgb_for_background(rgb: Tuple[int, int, int]) -> Tuple[int, int, int]:
+    luminance = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+    return (0, 0, 0) if luminance > 150 else (255, 255, 255)
+
+
+def _render_fitted_text(label: str, color: Tuple[int, int, int], inner_width: int, inner_height: int) -> Image.Image:
+    font_size = max(1, inner_height)
+    while font_size > 1:
+        font = _load_font(font_size)
+        left, top, right, bottom = _text_bbox(font, label)
+        if bottom - top <= inner_height:
+            break
+        font_size -= 1
+    font = _load_font(font_size)
+    left, top, right, bottom = _text_bbox(font, label)
+    width = max(1, right - left)
+    height = max(1, bottom - top)
+
+    text = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(text)
+    draw.text((-left, -top), label, fill=(*color, 255), font=font)
+
+    scale = min(1.0, inner_width / width, inner_height / height)
+    if scale < 1.0:
+        target = (max(1, int(width * scale)), max(1, int(height * scale)))
+        text = text.resize(target, Image.Resampling.LANCZOS)
+    return text
+
+
+def _svg_text_plan(label: str, inner_width: int, inner_height: int) -> Tuple[float, float]:
+    font_size = min(inner_height * 0.78, inner_width / max(1.0, len(label) * 0.62))
+    font_size = max(1.0, font_size)
+    text_length = min(inner_width, max(font_size * 0.35, len(label) * font_size * 0.62))
+    return font_size, text_length
+
+
+def _rgb_to_svg(rgb: Tuple[int, int, int]) -> str:
+    return "#{:02X}{:02X}{:02X}".format(*rgb)
 
 
 @dataclass(frozen=True)
@@ -217,29 +306,41 @@ class Pattern:
                     draw.rectangle(box, outline=(210, 210, 210))
         return canvas
 
-    def to_symbol_image(self, *, cell_size: int = 24, show_grid: bool = True) -> Image.Image:
+    def to_symbol_image(
+        self,
+        *,
+        cell_size: int = 24,
+        show_grid: bool = True,
+        label_mode: SymbolLabelMode = "code",
+    ) -> Image.Image:
         """
-        Render a symbol map with bead codes.
+        Render a PNG-compatible symbol map with bead-code labels.
 
-        The current renderer writes the last three characters of each color
-        code into the cell.  It is intended as a compact, human-checkable
-        symbol map for README examples and downstream exports.
+        Labels are rendered into a transparent temporary image and scaled into
+        the padded area of each cell.  This guarantees that even long color
+        codes stay strictly inside their own cells in the returned bitmap.
 
         :param cell_size: Pixel size of one cell, defaults to ``24``.
         :type cell_size: int, optional
         :param show_grid: Whether to draw cell borders, defaults to ``True``.
         :type show_grid: bool, optional
+        :param label_mode: Label text strategy, defaults to ``"code"``. Use
+            ``"short"`` for the last three code characters or ``"symbol"``
+            for upstream symbol metadata when available.
+        :type label_mode: SymbolLabelMode, optional
         :return: RGB symbol image.
         :rtype: PIL.Image.Image
-        :raises ValueError: If ``cell_size`` is not positive.
+        :raises ValueError: If ``cell_size`` is not positive or
+            ``label_mode`` is unsupported.
         """
 
         if cell_size <= 0:
             raise ValueError("cell_size should be positive.")
+        label_mode = _check_label_mode(label_mode)
 
         canvas = Image.new("RGB", (self.width * cell_size, self.height * cell_size), "white")
         draw = ImageDraw.Draw(canvas)
-        font = ImageFont.load_default()
+        padding, inner_width, inner_height = _cell_inner_size(cell_size)
         for y in range(self.height):
             for x in range(self.width):
                 left, top = x * cell_size, y * cell_size
@@ -247,15 +348,155 @@ class Pattern:
                 if self.active_mask[y, x] and self.indices[y, x] >= 0:
                     color = self.palette.colors[int(self.indices[y, x])]
                     draw.rectangle(box, fill=color.rgb)
-                    luminance = 0.2126 * color.rgb[0] + 0.7152 * color.rgb[1] + 0.0722 * color.rgb[2]
-                    text_color = (0, 0, 0) if luminance > 150 else (255, 255, 255)
-                    label = color.code[-3:]
-                    bbox = draw.textbbox((0, 0), label, font=font)
-                    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-                    draw.text((left + (cell_size - tw) / 2, top + (cell_size - th) / 2), label, fill=text_color, font=font)
+                    label = _label_for_color(color, label_mode)
+                    if label:
+                        text = _render_fitted_text(label, _text_rgb_for_background(color.rgb), inner_width, inner_height)
+                        tx = left + padding + (inner_width - text.width) // 2
+                        ty = top + padding + (inner_height - text.height) // 2
+                        canvas.paste(text.convert("RGB"), (tx, ty), text)
                 if show_grid:
-                    draw.rectangle(box, outline=(80, 80, 80))
+                    draw.rectangle(box, outline=_GRID_RGB)
         return canvas
+
+    def to_symbol_svg(
+        self,
+        *,
+        cell_size: int = 24,
+        show_grid: bool = True,
+        label_mode: SymbolLabelMode = "code",
+        font_family: str = _SVG_FONT_FAMILY,
+    ) -> str:
+        """
+        Render a symbol map as SVG text.
+
+        The SVG renderer uses the same cell padding and label strategy as
+        :meth:`to_symbol_image`.  Each label is placed in a per-cell clip path
+        and receives a conservative ``textLength`` constraint, so SVG viewers
+        cannot draw code text outside its own cell.
+
+        :param cell_size: SVG user-unit size of one cell, defaults to ``24``.
+        :type cell_size: int, optional
+        :param show_grid: Whether to draw cell borders, defaults to ``True``.
+        :type show_grid: bool, optional
+        :param label_mode: Label text strategy, defaults to ``"code"``.
+        :type label_mode: SymbolLabelMode, optional
+        :param font_family: SVG font-family declaration, defaults to a
+            monospace fallback stack.
+        :type font_family: str, optional
+        :return: SVG document text.
+        :rtype: str
+        :raises ValueError: If ``cell_size`` is not positive or
+            ``label_mode`` is unsupported.
+        """
+
+        if cell_size <= 0:
+            raise ValueError("cell_size should be positive.")
+        label_mode = _check_label_mode(label_mode)
+
+        width = self.width * cell_size
+        height = self.height * cell_size
+        padding, inner_width, inner_height = _cell_inner_size(cell_size)
+        font_family_text = escape(font_family, quote=True)
+
+        lines = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            (
+                f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+                f'viewBox="0 0 {width} {height}" shape-rendering="crispEdges">'
+            ),
+            '  <rect width="100%" height="100%" fill="#FFFFFF"/>',
+            "  <defs>",
+        ]
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.active_mask[y, x] and self.indices[y, x] >= 0:
+                    clip_id = f"cell-{x}-{y}-clip"
+                    left = x * cell_size + padding
+                    top = y * cell_size + padding
+                    lines.append(
+                        f'    <clipPath id="{clip_id}">'
+                        f'<rect x="{left}" y="{top}" width="{inner_width}" height="{inner_height}"/>'
+                        f"</clipPath>"
+                    )
+        lines.append("  </defs>")
+
+        for y in range(self.height):
+            for x in range(self.width):
+                left, top = x * cell_size, y * cell_size
+                stroke = f' stroke="{_SVG_GRID}" stroke-width="1"' if show_grid else ""
+                if self.active_mask[y, x] and self.indices[y, x] >= 0:
+                    color = self.palette.colors[int(self.indices[y, x])]
+                    fill = _rgb_to_svg(color.rgb)
+                    lines.append(
+                        f'  <rect x="{left}" y="{top}" width="{cell_size}" height="{cell_size}" fill="{fill}"{stroke}/>'
+                    )
+                    label = _label_for_color(color, label_mode)
+                    if label:
+                        text_rgb = _text_rgb_for_background(color.rgb)
+                        text_fill = _rgb_to_svg(text_rgb)
+                        font_size, text_length = _svg_text_plan(label, inner_width, inner_height)
+                        cx = left + cell_size / 2
+                        cy = top + cell_size / 2
+                        clip_id = f"cell-{x}-{y}-clip"
+                        lines.append(
+                            f'  <text x="{cx:.3f}" y="{cy:.3f}" fill="{text_fill}" '
+                            f'font-family="{font_family_text}" font-size="{font_size:.3f}" '
+                            f'text-anchor="middle" dominant-baseline="central" alignment-baseline="central" '
+                            f'textLength="{text_length:.3f}" lengthAdjust="spacingAndGlyphs" '
+                            f'clip-path="url(#{clip_id})">{escape(label)}</text>'
+                        )
+                else:
+                    lines.append(
+                        f'  <rect x="{left}" y="{top}" width="{cell_size}" height="{cell_size}" fill="#FFFFFF"{stroke}/>'
+                    )
+        lines.append("</svg>")
+        return "\n".join(lines) + "\n"
+
+    def save_symbol_chart(
+        self,
+        path: Union[str, Path],
+        *,
+        format: Optional[SymbolFormat] = None,
+        cell_size: int = 24,
+        show_grid: bool = True,
+        label_mode: SymbolLabelMode = "code",
+    ) -> Path:
+        """
+        Save a symbol chart as PNG or SVG.
+
+        When ``format`` is omitted, it is inferred from the file suffix.  The
+        PNG path uses :meth:`to_symbol_image`; the SVG path uses
+        :meth:`to_symbol_svg`.
+
+        :param path: Output path.
+        :type path: Union[str, pathlib.Path]
+        :param format: Output format, either ``"png"`` or ``"svg"``. When
+            omitted, the suffix of ``path`` is used.
+        :type format: Optional[SymbolFormat], optional
+        :param cell_size: Size of one chart cell, defaults to ``24``.
+        :type cell_size: int, optional
+        :param show_grid: Whether to draw cell borders, defaults to ``True``.
+        :type show_grid: bool, optional
+        :param label_mode: Label text strategy, defaults to ``"code"``.
+        :type label_mode: SymbolLabelMode, optional
+        :return: Saved output path.
+        :rtype: pathlib.Path
+        :raises ValueError: If the format cannot be inferred or is unsupported.
+        """
+
+        output = Path(path)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        fmt = (format or output.suffix.lstrip(".")).lower()
+        if fmt == "png":
+            self.to_symbol_image(cell_size=cell_size, show_grid=show_grid, label_mode=label_mode).save(output)
+        elif fmt == "svg":
+            output.write_text(
+                self.to_symbol_svg(cell_size=cell_size, show_grid=show_grid, label_mode=label_mode),
+                encoding="utf-8",
+            )
+        else:
+            raise ValueError(f"Unsupported symbol chart format: {fmt!r}.")
+        return output
 
 
 def color_for_code(pattern: Pattern, code: str) -> BeadColor:

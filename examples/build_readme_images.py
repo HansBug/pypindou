@@ -164,7 +164,8 @@ def _build_example(example: ReadmeExample) -> None:
     )
     _save_source(example, image, scale=6)
     pattern.to_image(scale=6, grid=False).save(ASSET_DIR / f"{example.name}-preview.png")
-    pattern.to_symbol_image(cell_size=12).save(ASSET_DIR / f"{example.name}-symbols.png")
+    pattern.save_symbol_chart(ASSET_DIR / f"{example.name}-symbols.png", cell_size=12)
+    pattern.save_symbol_chart(ASSET_DIR / f"{example.name}-symbols.svg", cell_size=12)
 
 
 def main() -> None:
